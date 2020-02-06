@@ -37,8 +37,13 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'tracks'
+    'graphene_django',  # using django graphql
+    'tracks'  # you can import apps by just writing the name
 ]
+
+GRAPHENE = {
+    'SCHEMA': 'grapql_learning_project.schema.schema'  # orginal schema location
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
