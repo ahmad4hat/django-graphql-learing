@@ -42,7 +42,10 @@ INSTALLED_APPS = [
 ]
 
 GRAPHENE = {
-    'SCHEMA': 'grapql_learning_project.schema.schema'  # orginal schema location
+    'SCHEMA': 'grapql_learning_project.schema.schema',  # orginal schema location
+    'MIDDLEWARE': [
+        'graphql_jwt.middleware.JSONWebTokenMiddleware',
+    ],
 }
 
 MIDDLEWARE = [
@@ -53,6 +56,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
 ]
 
 ROOT_URLCONF = 'grapql_learning_project.urls'
@@ -76,6 +80,12 @@ TEMPLATES = [
 WSGI_APPLICATION = 'grapql_learning_project.wsgi.application'
 
 
+AUTHENTICATION_BACKENDS = [
+    'graphql_jwt.backends.JSONWebTokenBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
+
+
 # Database
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
 
@@ -90,6 +100,9 @@ DATABASES = {
 
     }
 }
+
+
+
 
 
 # Password validation
