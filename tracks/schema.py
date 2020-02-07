@@ -1,6 +1,7 @@
 import graphene
 from graphene_django import DjangoObjectType
-from .models import Track
+from .models import Track, Like
+from users.schema import UserType
 
 
 class TrackType (DjangoObjectType):
@@ -8,11 +9,9 @@ class TrackType (DjangoObjectType):
         model = Track
 
 
-class Query(graphene.ObjectType):
-    tracks = graphene.List(TrackType)
-
-    def resolve_tracks(self, info):
-        return Track.objects.all()
+class LikeType (DjangoObjectType):
+    class Meta:
+        model = Like
 
 
 class CreateTrack(graphene.Mutation):
@@ -24,18 +23,92 @@ class CreateTrack(graphene.Mutation):
         url = graphene.String()
 
     def mutate(self, info, title, description, url):
-        #user details 
+        # user details
         user = info.context.user
-        
-        #if not logged in
+
+        # if not logged in
         if user.is_anonymous:
             raise Exception('log in to add tracks')
-        
+
         track = Track(title=title, description=description,
                       url=url, posted_by=user)
         track.save()
         return CreateTrack(track=track)
 
 
+class UpdateTracks(graphene.Mutation):
+    track = graphene.Field(TrackType)
+
+    class Arguments:
+        track_id = graphene.Int(required=True)
+        title = graphene.String()
+        description = graphene.String()
+        url = graphene.String()
+
+    def mutate(self, info, track_id, title, description, url):
+        user = info.context.user
+        track = Track.objects.get(id=track_id)  # important
+        if(track.posted_by != user):
+            raise Exception('not authorized to create the tracks')
+        track.title = title
+        track.description = description
+        track.url = url
+        track.save()
+        return UpdateTracks(track=track)
+
+
+class DeleteTrack(graphene.Mutation):
+    track_id = graphene.Int()
+
+    class Arguments:
+        track_id = graphene.Int()
+
+    def mutate(self, info, track_id):
+        user = info.context.user
+        track = Track.objects.get(id=track_id)
+
+        if(track.posted_by != user):
+            raise Exception('not authorized to delete the tracks')
+
+        track.delete()
+        return DeleteTrack(track_id)
+
+
+class CreateLike(graphene.Mutation):
+    user = graphene.Field(UserType)
+    track = graphene.Field(TrackType)
+
+    class Arguments:
+        track_id = graphene.Int(required=True)
+
+    def mutate(self, info, track_id):
+        user = info.context.user
+        if(user.is_anonymous):
+            raise Exception('Login to tracks')
+
+        track = Track.objects.get(id=track_id)
+        if not track:
+            raise Exception('cant find the track')
+        Like.objects.create(
+            user=user,
+            track=track
+        )
+        return CreateLike(user=user, track=track)
+
+
 class Mutation(graphene.ObjectType):
     create_track = CreateTrack.Field()
+    update_track = UpdateTracks.Field()
+    delete_track = DeleteTrack.Field()
+    create_like = CreateLike.Field()
+
+
+class Query(graphene.ObjectType):
+    tracks = graphene.List(TrackType)
+    likes = graphene.List(LikeType)
+
+    def resolve_tracks(self, info):
+        return Track.objects.all()
+
+    def resolve_likes(self, info):
+        return Like.objects.all()
